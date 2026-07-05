@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tarjetón Electoral de Celania</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .tarjeton-container {
+            background-color: #fff;
+            border: 3px double #333;
+            padding: 25px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .tarjeton-header {
+            text-align: center;
+            border-bottom: 2px solid #333;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        .tarjeton-header h1 {
+            font-size: 20px;
+            margin: 0 0 5px 0;
+            text-transform: uppercase;
+        }
+        .tarjeton-header p {
+            font-size: 13px;
+            margin: 0;
+            color: #666;
+        }
+        .opciones-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .opcion-card {
+            border: 1px solid #ccc;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+            transition: background-color 0.2s, border-color 0.2s;
+            position: relative;
+        }
+        .opcion-card:hover {
+            background-color: #f9f9f9;
+            border-color: #666;
+        }
+        .opcion-card input[type="radio"] {
+            transform: scale(1.3);
+            cursor: pointer;
+        }
+        .party-indicator {
+            width: 8px;
+            height: 40px;
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            margin: auto 0;
+        }
+        .info-candidato {
+            display: flex;
+            flex-direction: column;
+            padding-left: 5px;
+        }
+        .nombre-candidato {
+            font-weight: bold;
+            font-size: 15px;
+        }
+        .partido-candidato {
+            font-size: 12px;
+            color: #777;
+            margin-top: 2px;
+        }
+        .btn-votar {
+            width: 100%;
+            background-color: #222;
+            color: #fff;
+            border: none;
+            padding: 12px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: background-color 0.2s;
+        }
+        .btn-votar:hover {
+            background-color: #444;
+        }
+        .resultado-box {
+            margin-top: 15px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+            display: none;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="tarjeton-container">
+        <div class="tarjeton-header">
+            <h1>Tarjetón Electoral Oficial</h1>
+            <p>Elecciones Presidenciales Simuladas — República de Celania</p>
+        </div>
+
+        <form id="electoralForm">
+            <div class="opciones-grid">
+                <!-- Candidato 1 -->
+                <label class="opcion-card">
+                    <div class="party-indicator" style="background-color: #c00;"></div>
+                    <input type="radio" name="candidato" value="CANDIDATO_A">
+                    <div class="info-candidato">
+                        <span class="nombre-candidato">Beatriz Sánchez</span>
+                        <span class="partido-candidato">Unión Popular (UP)</span>
+                    </div>
+                </label>
+
+                <!-- Candidato 2 -->
+                <label class="opcion-card">
+                    <div class="party-indicator" style="background-color: #0056b3;"></div>
+                    <input type="radio" name="candidato" value="CANDIDATO_B">
+                    <div class="info-candidato">
+                        <span class="nombre-candidato">José Páez</span>
+                        <span class="partido-candidato">Frente de Convergencia Civil (FCC)</span>
+                    </div>
+                </label>
+
+                <!-- Candidato 3 -->
+                <label class="opcion-card">
+                    <div class="party-indicator" style="background-color: #ffcc00;"></div>
+                    <input type="radio" name="candidato" value="CANDIDATO_C">
+                    <div class="info-candidato">
+                        <span class="nombre-candidato">Andrés Allamand</span>
+                        <span class="partido-candidato">Alianza Popular (AP)</span>
+                    </div>
+                </label>
+            </div>
+
+            <button type="button" class="btn-votar" onclick="procesarVoto()">Emitir Voto Seguro</button>
+        </form>
+
+        <div id="resultado" class="resultado-box"></div>
+    </div>
+
+    <script>
+        async function generarHash(texto) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(texto + "CelaniaSalt2026"); 
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            return hashHex;
+        }
+
+        async function procesarVoto() {
+            const form = document.getElementById('electoralForm');
+            const seleccionado = form.elements['candidato'].value;
+
+            if (!seleccionado) {
+                alert("Por favor, seleccione una opción en el tarjetón.");
+                return;
+            }
+
+            const boton = document.querySelector('.btn-votar');
+            boton.disabled = true;
+            boton.innerText = "Transmitiendo...";
+
+            const votoEncriptado = await generarHash(seleccionado);
+            const urlBackend = "https://elecciones-wikicelania.up.railway.app/registrar-voto";
+
+            try {
+                // Enviamos como x-www-form-urlencoded para evadir las restricciones estrictas de CORS 'null' del móvil
+                const respuesta = await fetch(urlBackend, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: new URLSearchParams({ 'hash': votoEncriptado })
+                });
+
+                const resultado = await respuesta.json();
+                const resultadoBox = document.getElementById('resultado');
+                resultadoBox.style.display = 'block';
+
+                if (respuesta.status === 200 && resultado.status === "success") {
+                    resultadoBox.style.backgroundColor = "#eef7ee";
+                    resultadoBox.style.borderColor = "#bcdec0";
+                    resultadoBox.style.color = "#27502c";
+                    resultadoBox.innerHTML = `<strong>¡Voto registrado con éxito!</strong><br><br>Tu respuesta ha sido encriptada y transmitida de manera anónima.<br><small style="word-break: break-all; color: #555;">Firma digital: ${votoEncriptado}</small>`;
+                    form.reset(); 
+                } else {
+                    resultadoBox.style.backgroundColor = "#fdeaea";
+                    resultadoBox.style.borderColor = "#f5c6cb";
+                    resultadoBox.style.color = "#721c24";
+                    resultadoBox.innerHTML = `<strong>Error en la votación:</strong><br>${resultado.message || 'No se pudo procesar el voto.'}`;
+                }
+            } catch (error) {
+                console.error("Error de conexión:", error);
+                alert("No se pudo conectar con el servidor. Asegúrate de que el despliegue de Python en Railway haya terminado de actualizarse.");
+            } finally {
+                boton.disabled = false;
+                boton.innerText = "Emitir Voto Seguro";
+            }
+        }
+    </script>
+</body>
+  </html>
+  
